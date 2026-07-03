@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}View Forecast: {{ product.name }} - DemandAI{% endblock %}
+
+{% block header_title %}Demand Forecasting Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Back to panel & Product header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{{ url_for('forecasting.forecast_panel') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to AI Panel
+        </a>
+        <h4 class="mb-0 text-white fw-bold">{{ product.name }} <small class="text-secondary font-monospace fs-6">({{ product.sku }})</small></h4>
+    </div>
+
+    <!-- Chart Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card-custom p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-white mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Sales History vs AI Forecast Demand</h5>
+                    
+                    <form action="{{ url_for('forecasting.generate_forecast', product_id=product.id) }}" method="POST" class="d-flex align-items-center gap-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <label for="horizon" class="fs-7 text-secondary-custom text-nowrap mb-0">Forecast Horizon:</label>
+                        <select name="horizon" id="horizon" onchange="this.form.submit()" class="form-select form-select-sm d-inline-block w-auto" style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-color);">
+                            <option value="7" {% if horizon == 7 %}selected{% endif %}>7 Days</option>
+                            <option value="30" {% if horizon == 30 %}selected{% endif %}>30 Days</option>
+                            <option value="90" {% if horizon == 90 %}selected{% endif %}>90 Days</option>
+                            <option value="180" {% if horizon == 180 %}selected{% endif %}>180 Days</option>
+                        </select>
+                    </form>
+                </div>
+                <!-- Line Chart Container -->
+                <div style="position: relative; height: 350px; width: 100%;">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Model Metrics Comparison -->
+        <div class="col-lg-7">
+            <div class="card-custom p-4 h-100">
+                <h5 class="fw-bold text-white mb-3"><i class="bi bi-award-fill text-primary me-2"></i>Model Metrics Evaluation</h5>
+                <p class="text-secondary-custom fs-7 mb-4">Lower MAE/RMSE/MAPE indicates higher accuracy. $R^2$ represents fitness closer to 1.0.</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover table-custom border-color-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Model Type</th>
+                                <th>MAE</th>
+                                <th>RMSE</th>
+                                <th>MAPE</th>
+                                <th>R² Score</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for meta in models_meta %}
+                            <tr class="{% if meta.is_best_model %}table-active-custom{% endif %}">
+                                <td class="fw-bold text-white">{{ meta.model_type }}</td>
+                                <td>{{ "%.2f"|format(meta.mae) if meta.mae else 'N/A' }}</td>
+                                <td>{{ "%.2f"|format(meta.rmse) if meta.rmse else 'N/A' }}</td>
+                                <td>{{ "%.2f"|format(meta.mape) if meta.mape else 'N/A' }}%</td>
+                                <td>{{ "%.3f"|format(meta.r2_score) if meta.r2_score else 'N/A' }}</td>
+                                <td>
+                                    {% if meta.is_best_model %}
+                                        <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> Selected Best</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary-subtle text-secondary">Candidate</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Predicted Values Table -->
+        <div class="col-lg-5">
+            <div class="card-custom p-4 h-100">
+                <h5 class="fw-bold text-white mb-3"><i class="bi bi-calendar3 text-primary me-2"></i>Predicted Demand Schedule</h5>
+                <p class="text-secondary-custom fs-7 mb-3">Target daily quantities based on current best-selected model: <strong class="text-white">{{ best_model.model_type if best_model else 'N/A' }}</strong></p>
+                
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                    <table class="table table-dark table-sm table-custom border-color-custom fs-7">
+                        <thead>
+                            <tr>
+                                <th>Forecast Date</th>
+                                <th>Predicted Demand</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dp in chart_forecast %}
+                            <tr>
+                                <td class="text-white">{{ dp.x }}</td>
+                                <td class="fw-bold text-primary">{{ dp.y }} units</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2" class="text-center py-4 text-secondary-custom">No predictions generated.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const historyData = {{ chart_history|tojson }};
+        const forecastData = {{ chart_forecast|tojson }};
+
+        // Separate labels and datasets
+        const historyLabels = historyData.map(d => d.x);
+        const historyValues = historyData.map(d => d.y);
+        
+        const forecastLabels = forecastData.map(d => d.x);
+        const forecastValues = forecastData.map(d => d.y);
+
+        // Join labels for continuous timeline (history then forecast)
+        const allLabels = [...historyLabels, ...forecastLabels];
+        
+        // Align data properly
+        const alignedHistory = [...historyValues];
+        // Fill forecast indices with null in history line so it doesn't graph there
+        for (let i = 0; i < forecastLabels.length; i++) {
+            alignedHistory.push(null);
+        }
+
+        // Fill history indices with null in forecast line so it doesn't graph there, and connect at last point
+        const alignedForecast = [];
+        for (let i = 0; i < historyLabels.length - 1; i++) {
+            alignedForecast.push(null);
+        }
+        if (historyValues.length > 0) {
+            alignedForecast.push(historyValues[historyValues.length - 1]); // connect lines
+        }
+        alignedForecast.push(...forecastValues);
+
+        const ctx = document.getElementById('forecastChart').getContext('2d');
+        const forecastChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: allLabels,
+                datasets: [
+                    {
+                        label: 'Historical Sales',
+                        data: alignedHistory,
+                        borderColor: '#2563eb', // Blue
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        fill: true,
+                        spanGaps: false
+                    },
+                    {
+                        label: 'AI Forecasted Demand',
+                        data: alignedForecast,
+                        borderColor: '#a855f7', // Purple
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5], // dotted line
+                        pointRadius: 3,
+                        pointBackgroundColor: '#a855f7',
+                        fill: true,
+                        spanGaps: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(255,255,255,0.05)'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            maxTicksLimit: 12
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(255,255,255,0.05)'
+                        },
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Quantity (units)',
+                            color: '#94a3b8'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#f8fafc'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

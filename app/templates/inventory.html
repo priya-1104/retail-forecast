@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Optimization - DemandAI{% endblock %}
+
+{% block header_title %}Inventory Optimization{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom p-3 border-start border-4 border-primary">
+                <small class="text-muted uppercase fw-bold">Stock Checked Items</small>
+                <h3 class="text-value mb-0">{{ stats.total }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom p-3 border-start border-4 border-success">
+                <small class="text-muted uppercase fw-bold">Healthy Stock</small>
+                <h3 class="text-value mb-0 text-success">{{ stats.healthy }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom p-3 border-start border-4 border-warning">
+                <small class="text-muted uppercase fw-bold">Low / Critical Stock</small>
+                <h3 class="text-value mb-0 text-warning">{{ stats.low }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-custom p-3 border-start border-4 border-danger">
+                <small class="text-muted uppercase fw-bold">Out of Stock</small>
+                <h3 class="text-value mb-0 text-danger">{{ stats.out }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optimization Panel Table -->
+    <div class="card-custom p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h5 class="fw-bold text-white mb-1"><i class="bi bi-gear-wide-connected text-primary me-2"></i>Stock Parameters & Recommendations</h5>
+                <p class="text-secondary-custom mb-0 fs-7">Recalculate mathematical reorder indices based on sales rates</p>
+            </div>
+            {% if current_user.role in ['Admin', 'Manager'] %}
+            <form action="{{ url_for('inventory.recalculate_metrics') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary-custom">
+                    <i class="bi bi-calculator me-1"></i> Recalculate Parameters
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover table-custom border-color-custom w-100" id="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Product SKU</th>
+                        <th>Current Stock</th>
+                        <th>Safety Stock</th>
+                        <th>Reorder Point (ROP)</th>
+                        <th>Economic Order (EOQ)</th>
+                        <th>Stock Status</th>
+                        <th>Action Suggestion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in inventories %}
+                    {% set current_stock = inv.product.quantity if inv.product else 0 %}
+                    <tr>
+                        <td class="fw-bold text-white" title="{{ inv.product.name if inv.product else '' }}">
+                            {{ inv.product.sku if inv.product else 'N/A' }}
+                        </td>
+                        <td>{{ current_stock }} units</td>
+                        <td>{{ inv.safety_stock }}</td>
+                        <td>{{ inv.reorder_point }}</td>
+                        <td>{{ inv.eoq }}</td>
+                        <td>
+                            {% if inv.stock_status == 'Out of Stock' %}
+                                <span class="badge bg-danger">Out of Stock</span>
+                            {% elif inv.stock_status == 'Critical Low' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger">Critical Low</span>
+                            {% elif inv.stock_status == 'Low Stock' %}
+                                <span class="badge bg-warning-subtle text-warning">Low Stock</span>
+                            {% elif inv.stock_status == 'Overstock' %}
+                                <span class="badge bg-info-subtle text-info">Overstocked</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success">Healthy</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if inv.stock_status == 'Out of Stock' %}
+                                <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> Order {{ inv.eoq }} units immediately</span>
+                            {% elif inv.stock_status == 'Critical Low' %}
+                                <span class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> Order {{ inv.eoq }} units immediately</span>
+                            {% elif inv.stock_status == 'Low Stock' %}
+                                <span class="text-warning"><i class="bi bi-cart-plus"></i> Reorder suggestion: purchase {{ inv.eoq }} units</span>
+                            {% elif inv.stock_status == 'Overstock' %}
+                                <span class="text-info"><i class="bi bi-pause-circle"></i> Overstocked. Suspend purchase</span>
+                            {% else %}
+                                <span class="text-success"><i class="bi bi-check-circle"></i> Stock levels healthy</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#inventory-table').DataTable({
+            responsive: true,
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search catalog parameters..."
+            }
+        });
+    });
+</script>
+{% endblock %}

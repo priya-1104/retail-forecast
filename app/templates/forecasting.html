@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}AI Forecasting Panel - DemandAI{% endblock %}
+
+{% block header_title %}AI Forecasting Engine{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Intro Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-custom p-4 bg-secondary shadow-sm" style="border: 1px solid rgba(255,255,255,0.06);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="alert-icon-wrapper bg-primary-subtle text-primary fs-3">
+                        <i class="bi bi-cpu-fill"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-white mb-1">Autonomous Machine Learning Engine</h4>
+                        <p class="text-secondary-custom mb-0 fs-7">
+                            Train Keras LSTMs, GRUs, and Facebook Prophet models. The system automatically measures MAPE, RMSE, and MAE to select and deploy the best forecasting model for each product.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Selection and Status Table -->
+    <div class="card-custom p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold text-white mb-0"><i class="bi bi-list-stars text-primary me-2"></i>Product Forecasting Models</h5>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-hover table-custom border-color-custom align-middle">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>SKU</th>
+                        <th>Category</th>
+                        <th>Historical Days</th>
+                        <th>Model Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in products %}
+                    {% set sales_count = p.sales.count() %}
+                    <tr>
+                        <td class="fw-bold text-white">{{ p.name }}</td>
+                        <td class="font-monospace fs-7 text-secondary-custom">{{ p.sku }}</td>
+                        <td>{{ p.category }}</td>
+                        <td>
+                            {% if sales_count >= 40 %}
+                                <span class="badge bg-success-subtle text-success">{{ sales_count }} days of history</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning">{{ sales_count }}/40 days of history</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.id in trained_skus %}
+                                {% set best_model = p.model_metadata.filter_by(is_best_model=True).first() %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Trained ({{ best_model.model_type if best_model else 'Auto' }})
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary">
+                                    <i class="bi bi-slash-circle-fill me-1"></i> Untrained
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                {% if sales_count >= 30 %}
+                                    {% if current_user.role in ['Admin', 'Manager'] %}
+                                    <form action="{{ url_for('forecasting.train_models', product_id=p.id) }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-primary-custom px-3">
+                                            <i class="bi bi-arrow-repeat me-1"></i> Train Model
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    
+                                    {% if p.id in trained_skus %}
+                                    <a href="{{ url_for('forecasting.view_forecast', product_id=p.id) }}" class="btn btn-sm btn-outline-info px-3">
+                                        <i class="bi bi-graph-up-arrow me-1"></i> View Forecast
+                                    </a>
+                                    {% endif %}
+                                {% else %}
+                                    <button class="btn btn-sm btn-outline-secondary px-3" disabled title="Requires at least 30 historical sales data points">
+                                        <i class="bi bi-lock-fill me-1"></i> Insufficient Data
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-secondary-custom">No products found. Please seed database or add products.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{
+  "name": "demandai-mobile-wrapper",
+  "version": "1.0.0",
+  "description": "Capacitor mobile wrapper for Autonomous Demand Forecasting System",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo \"Static web assets are ready. No compilation step required.\"",
+    "cap:init": "cap init",
+    "cap:sync": "cap sync",
+    "cap:add-android": "cap add android",
+    "cap:open-android": "cap open android"
+  },
+  "keywords": [
+    "capacitor",
+    "mobile",
+    "pwa",
+    "wrapper"
+  ],
+  "author": "DemandAI Team",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/android": "^6.0.0"
+  }
+}

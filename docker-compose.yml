@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: demand_forecasting_db
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=demand_forecasting
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+
+  web:
+    build: .
+    container_name: demand_forecasting_web
+    restart: always
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=prod_secret_key_change_me_in_production_12345
+      - JWT_SECRET_KEY=jwt_secret_key_change_me_in_production_12345
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/demand_forecasting
+    volumes:
+      - web_instance:/app/instance
+      - web_uploads:/app/app/static/uploads
+    expose:
+      - "5000"
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:alpine
+    container_name: demand_forecasting_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+
+volumes:
+  web_instance:
+  web_uploads:
+  db_data:

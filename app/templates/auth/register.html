@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Register Account - DemandAI{% endblock %}
+
+{% block header_title %}System Authentication{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <a href="/" class="auth-brand">
+                <i class="bi bi-cpu me-2"></i>DemandAI
+            </a>
+            <h5 class="text-white fw-bold mb-1">Create Account</h5>
+            <p class="text-muted fs-7">Register credentials to enter the forecasting platform</p>
+        </div>
+
+        <form action="{{ url_for('auth.register') }}" method="POST" id="register-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="mb-3">
+                <label for="username" class="form-label-custom">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-primary-custom border-0"><i class="bi bi-person text-white"></i></span>
+                    <input type="text" class="form-control form-control-custom" id="username" name="username" required placeholder="john_doe">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label-custom">Email Address</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-primary-custom border-0"><i class="bi bi-envelope text-white"></i></span>
+                    <input type="email" class="form-control form-control-custom" id="email" name="email" required placeholder="name@company.com">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="role" class="form-label-custom">Account Role</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-primary-custom border-0"><i class="bi bi-shield text-white"></i></span>
+                    <select class="form-select form-control-custom" id="role" name="role" required>
+                        <option value="Staff">Staff</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label-custom">Password</label>
+                <div class="input-group mb-2">
+                    <span class="input-group-text bg-primary-custom border-0"><i class="bi bi-lock text-white"></i></span>
+                    <input type="password" class="form-control form-control-custom" id="password" name="password" required placeholder="Minimum 8 characters">
+                    <button class="btn btn-outline-secondary border-color-custom" type="button" style="background-color: var(--bg-primary);">
+                        <i class="bi bi-eye toggle-password-visibility" data-target="password" style="cursor: pointer;"></i>
+                    </button>
+                </div>
+                
+                <!-- Password Strength Meter -->
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <small class="text-muted fs-8">Strength: <span id="password-strength-text" class="fw-bold text-secondary-custom"></span></small>
+                </div>
+                <div class="progress" style="height: 4px; background-color: var(--bg-primary);">
+                    <div id="password-strength-bar" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary-custom w-100 py-2 fs-6 mb-3 mt-2">
+                Register <i class="bi bi-person-plus-fill ms-1"></i>
+            </button>
+
+            <div class="text-center mt-3">
+                <span class="text-muted fs-7">Already have an account? </span>
+                <a href="{{ url_for('auth.login') }}" class="text-primary fs-7 fw-semibold" style="text-decoration: none;">Sign In here</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,10 @@
+
+{
+  "appId": "com.demandai.app",
+  "appName": "DemandAI",
+  "webDir": "app/static",
+  "server": {
+    "url": "http://10.0.2.2:5000",
+    "cleartext": true
+  }
+}

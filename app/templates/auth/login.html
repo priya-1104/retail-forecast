@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - DemandAI{% endblock %}
+
+{% block header_title %}System Authentication{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <a href="/" class="auth-brand">
+                <i class="bi bi-cpu me-2"></i>DemandAI
+            </a>
+            <h5 class="text-white fw-bold mb-1">Welcome Back</h5>
+            <p class="text-muted fs-7">Please sign in to access your portal</p>
+        </div>
+
+        <form action="{{ url_for('auth.login') }}" method="POST" id="login-form">
+            <!-- CSRF Token (handled automatically by Flask-WTF if using FlaskForm, but here we render it manually because we are using standard HTML forms for full design control) -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="mb-3">
+                <label for="email" class="form-label-custom">Email Address</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-primary-custom border-0"><i class="bi bi-envelope text-white"></i></span>
+                    <input type="email" class="form-control form-control-custom" id="email" name="email" required placeholder="name@company.com">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label for="password" class="form-label-custom mb-0">Password</label>
+                </div>
+                <div class="input-group">
+                    <span class="input-group-text bg-primary-custom border-0"><i class="bi bi-lock text-white"></i></span>
+                    <input type="password" class="form-control form-control-custom" id="password" name="password" required placeholder="Enter password">
+                    <button class="btn btn-outline-secondary border-color-custom" type="button" style="background-color: var(--bg-primary);">
+                        <i class="bi bi-eye toggle-password-visibility" data-target="password" style="cursor: pointer;"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="remember_me" name="remember_me" style="background-color: var(--bg-primary); border-color: var(--border-color);">
+                    <label class="form-check-label text-secondary-custom fs-7" for="remember_me">
+                        Remember me
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary-custom w-100 py-2 fs-6 mb-3">
+                Sign In <i class="bi bi-box-arrow-in-right ms-1"></i>
+            </button>
+
+            <div class="text-center mt-3">
+                <span class="text-muted fs-7">Don't have an account? </span>
+                <a href="{{ url_for('auth.register') }}" class="text-primary fs-7 fw-semibold" style="text-decoration: none;">Register here</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

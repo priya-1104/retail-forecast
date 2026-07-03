@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - DemandAI{% endblock %}
+
+{% block header_title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Top KPI Analytics Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Monthly Revenue Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card-custom card-analytics p-3" style="--accent-color: var(--primary);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted fw-semibold">Monthly Sales Revenue</span>
+                    <i class="bi bi-currency-dollar text-primary fs-4"></i>
+                </div>
+                <h3 class="text-value text-white mb-1">${{ "%.2f"|format(monthly_revenue) }}</h3>
+                <div class="fs-7 text-secondary-custom">
+                    <span class="text-success"><i class="bi bi-graph-up"></i> Last 30 Days</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Predicted Demand Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card-custom card-analytics p-3" style="--accent-color: var(--info);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted fw-semibold">Predicted Demand (30d)</span>
+                    <i class="bi bi-graph-up-arrow text-info fs-4"></i>
+                </div>
+                <h3 class="text-value text-white mb-1">{{ "%.0f"|format(predicted_demand_qty) }} units</h3>
+                <div class="fs-7 text-secondary-custom">
+                    <span class="text-info"><i class="bi bi-cpu"></i> AI Mode Predictions</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Items Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card-custom card-analytics p-3" style="--accent-color: var(--warning);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted fw-semibold">Shortage Risk Items</span>
+                    <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                </div>
+                <h3 class="text-value mb-1 {% if low_stock_count > 0 %}text-warning{% else %}text-white{% endif %}">
+                    {{ low_stock_count }} items
+                </h3>
+                <div class="fs-7 text-secondary-custom">
+                    <span>Below Safety Stock / ROP</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unread Warnings Card -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card-custom card-analytics p-3" style="--accent-color: var(--danger);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted fw-semibold">Active System Alerts</span>
+                    <i class="bi bi-bell-fill text-danger fs-4"></i>
+                </div>
+                <h3 class="text-value mb-1 {% if unread_alerts_count > 0 %}text-danger{% else %}text-white{% endif %}">
+                    {{ unread_alerts_count }} alerts
+                </h3>
+                <div class="fs-7 text-secondary-custom">
+                    <span>Require operational action</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Grid Row 1 -->
+    <div class="row g-4 mb-4">
+        <!-- Sales Trend Line Chart -->
+        <div class="col-lg-8">
+            <div class="card-custom p-4">
+                <h5 class="fw-bold text-white mb-3"><i class="bi bi-activity text-primary me-2"></i>Sales Revenue Trend (Daily)</h5>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="salesTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category breakdown pie/doughnut -->
+        <div class="col-lg-4">
+            <div class="card-custom p-4">
+                <h5 class="fw-bold text-white mb-3"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Sales by Category</h5>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="categorySalesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Grid Row 2 -->
+    <div class="row g-4">
+        <!-- Top Products Bar Chart -->
+        <div class="col-md-6">
+            <div class="card-custom p-4">
+                <h5 class="fw-bold text-white mb-3"><i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Top 5 Products (by Revenue)</h5>
+                <div style="position: relative; height: 260px; width: 100%;">
+                    <canvas id="topProductsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Forecast Schedule Bar Chart -->
+        <div class="col-md-6">
+            <div class="card-custom p-4">
+                <h5 class="fw-bold text-white mb-3">
+                    <i class="bi bi-forecast text-primary me-2"></i>AI 7-Day Forecast: <small class="text-secondary font-monospace">{{ sample_product_name }}</small>
+                </h5>
+                <div style="position: relative; height: 260px; width: 100%;">
+                    {% if forecast_comparison %}
+                    <canvas id="forecastComparisonChart"></canvas>
+                    {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-slash-circle fs-3 mb-2 d-block"></i>
+                        No active predictions. Go to the Forecasting page to train models and generate forecasts.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Chart A: Sales Trend (Line)
+        const trendData = {{ sales_trend|tojson }};
+        const trendLabels = trendData.map(d => d.date);
+        const trendValues = trendData.map(d => d.val);
+
+        new Chart(document.getElementById('salesTrendChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Daily Revenue ($)',
+                    data: trendValues,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 2. Chart B: Category Wise Sales (Doughnut)
+        const catData = {{ category_sales|tojson }};
+        const catLabels = catData.map(d => d.category);
+        const catValues = catData.map(d => d.revenue);
+
+        new Chart(document.getElementById('categorySalesChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catValues,
+                    backgroundColor: ['#38bdf8', '#10b981', '#fbbf24', '#f87171', '#a855f7'],
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.08)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#f8fafc', boxWidth: 12 }
+                    }
+                }
+            }
+        });
+
+        // 3. Chart C: Top Products (Horizontal Bar)
+        const topData = {{ top_products|tojson }};
+        const topLabels = topData.map(d => d.name);
+        const topValues = topData.map(d => d.revenue);
+
+        new Chart(document.getElementById('topProductsChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: topLabels,
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: topValues,
+                    backgroundColor: '#10b981',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { display: false }, ticks: { color: '#f8fafc' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 4. Chart D: AI Forecast Schedule (Bar)
+        {% if forecast_comparison %}
+        const fcData = {{ forecast_comparison|tojson }};
+        const fcLabels = fcData.map(d => d.date);
+        const fcValues = fcData.map(d => d.qty);
+
+        new Chart(document.getElementById('forecastComparisonChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: fcLabels,
+                datasets: [{
+                    label: 'Predicted Units',
+                    data: fcValues,
+                    backgroundColor: '#a855f7',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}
