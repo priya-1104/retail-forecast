@@ -11,20 +11,11 @@ from app.models.business import Product, Sale
 from app.models.forecast import Forecast, ModelMetadata
 from app.models.system import Alert
 
-# Wrap heavy imports in try/except blocks to make codebase resilient and immediately runnable
-try:
-    import tensorflow as tf
-    from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, LSTM, GRU
-    TENSORFLOW_AVAILABLE = True
-except ImportError:
-    TENSORFLOW_AVAILABLE = False
+import importlib.util
 
-try:
-    from prophet import Prophet
-    PROPHET_AVAILABLE = True
-except ImportError:
-    PROPHET_AVAILABLE = False
+# Check package availability without importing them (saves RAM on startup)
+TENSORFLOW_AVAILABLE = importlib.util.find_spec('tensorflow') is not None
+PROPHET_AVAILABLE = importlib.util.find_spec('prophet') is not None
 
 
 class AIEngine:
@@ -129,6 +120,11 @@ class AIEngine:
     @classmethod
     def train_keras_model(cls, train_series, val_series, model_type='LSTM', window_size=30):
         """Trains a real LSTM or GRU Keras model on historical quantities."""
+        import tensorflow as tf
+        import keras
+        from keras.models import Sequential
+        from keras.layers import Dense, LSTM, GRU
+        
         # Normalize
         scaler = MinMaxScaler(feature_range=(0, 1))
         train_scaled = scaler.fit_transform(train_series.values.reshape(-1, 1))
@@ -183,6 +179,8 @@ class AIEngine:
     @classmethod
     def train_prophet_model(cls, train_series, val_series):
         """Trains a Facebook Prophet model."""
+        from prophet import Prophet
+        
         df_train = train_series.reset_index()
         df_train.columns = ['ds', 'y']
         
@@ -271,6 +269,8 @@ class AIEngine:
         future_dates = [today + timedelta(days=i) for i in range(1, horizon_days + 1)]
         
         if best_model_type == 'Prophet' and PROPHET_AVAILABLE:
+            from prophet import Prophet
+            
             df = series.reset_index()
             df.columns = ['ds', 'y']
             m = Prophet(daily_seasonality=True, weekly_seasonality=True, yearly_seasonality=False)

@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: retail-demand-forecasting
+    env: docker
+    dockerFilePath: Dockerfile
+    plan: free
+    numInstances: 1
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: retail-forecast-db
+          property: connectionString
+
+databases:
+  - name: retail-forecast-db
+    plan: free
+    databaseName: retail_forecast
+    user: retail_user
