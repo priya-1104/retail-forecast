@@ -86,6 +86,12 @@
                         <span>User Manager</span>
                     </a>
                 </li>
+                <li class="{% if request.blueprint == 'db_management' %}active{% endif %}">
+                    <a href="{{ url_for('db_management.dashboard') }}">
+                        <i class="bi bi-database-fill-gear"></i>
+                        <span>Database Manager</span>
+                    </a>
+                </li>
                 {% endif %}
                 <li class="{% if request.blueprint == 'main' and request.endpoint == 'main.settings_panel' %}active{% endif %}">
                     <a href="{{ url_for('main.settings_panel') }}">

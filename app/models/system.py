@@ -62,3 +62,21 @@ class AuditLog(db.Model):
             'description': self.description,
             'created_at': self.created_at.isoformat()
         }
+
+# Phase 2 Database Logging & Auditing
+
+class SystemLog(db.Model):
+    __tablename__ = 'system_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(64), nullable=False)  # Error, Security, Database
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': self.type,
+            'message': self.message,
+            'created_at': self.created_at.isoformat()
+        }

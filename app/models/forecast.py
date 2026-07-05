@@ -51,3 +51,51 @@ class ModelMetadata(db.Model):
             'trained_at': self.trained_at.isoformat(),
             'model_path': self.model_path
         }
+
+# Phase 2 AI Model Management schemas
+
+class ModelVersion(db.Model):
+    __tablename__ = 'model_versions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
+    model_type = db.Column(db.String(32), nullable=False)  # LSTM, GRU, Prophet
+    version_tag = db.Column(db.String(64), nullable=False, default='v1.0')
+    file_path = db.Column(db.String(256), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    product = db.relationship('Product', backref=db.backref('model_versions', cascade='all, delete-orphan'))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'model_type': self.model_type,
+            'version_tag': self.version_tag,
+            'file_path': self.file_path,
+            'created_at': self.created_at.isoformat()
+        }
+
+class TrainingHistory(db.Model):
+    __tablename__ = 'training_history'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
+    model_type = db.Column(db.String(32), nullable=False)  # LSTM, GRU, Prophet
+    accuracy_score = db.Column(db.Float, nullable=True)  # R2 score or similar
+    hyperparameters = db.Column(db.Text, nullable=True)  # JSON-formatted string of parameters
+    trained_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    product = db.relationship('Product', backref=db.backref('training_history', cascade='all, delete-orphan'))
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'model_type': self.model_type,
+            'accuracy_score': self.accuracy_score,
+            'hyperparameters': self.hyperparameters,
+            'trained_at': self.trained_at.isoformat()
+        }

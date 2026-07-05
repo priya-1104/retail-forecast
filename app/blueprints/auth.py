@@ -58,7 +58,7 @@ def verify_otp():
         else:
             flash(msg, 'danger')
             
-    return render_template('auth/verify_otp.html')
+    return render_template('auth/verify_otp.html', otp_code=user.otp_secret)
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():

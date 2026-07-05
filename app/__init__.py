@@ -44,6 +44,7 @@ def create_app(config_class=Config):
     from app.blueprints.employees import employees_bp
     from app.blueprints.warehouses import warehouses_bp
     from app.blueprints.customers import customers_bp
+    from app.blueprints.db_management import db_management_bp
     from app.blueprints.api import api_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -57,6 +58,7 @@ def create_app(config_class=Config):
     app.register_blueprint(employees_bp, url_prefix='/employees')
     app.register_blueprint(warehouses_bp, url_prefix='/warehouses')
     app.register_blueprint(customers_bp, url_prefix='/customers')
+    app.register_blueprint(db_management_bp, url_prefix='/db')
     
     # Exempt API from CSRF and register it
     csrf.exempt(api_bp)

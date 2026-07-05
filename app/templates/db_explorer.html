@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% block title %}Explorer - {{ table_name }} - DemandAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('db_management.dashboard') }}">Database Management</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ table_name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header & Export Options -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Table: <span class="font-monospace text-primary fw-bold">{{ table_name }}</span></h1>
+            <p class="text-muted mb-0">Total Records: <strong class="text-dark">{{ "{:,}".format(total_rows) }}</strong> rows</p>
+        </div>
+        <div class="d-inline-flex gap-2">
+            <!-- Add Record Button -->
+            <button class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addRecordModal">
+                <i class="bi bi-plus-circle me-1"></i> Add Record
+            </button>
+            
+            <!-- Export Dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-file-earmark-arrow-down me-1"></i> Export Table
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('db_management.export_table', table_name=table_name, format='csv') }}">
+                            <i class="bi bi-filetype-csv text-danger me-2"></i> Export to CSV
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('db_management.export_table', table_name=table_name, format='xlsx') }}">
+                            <i class="bi bi-filetype-xlsx text-success me-2"></i> Export to Excel (XLSX)
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Search & Filter -->
+    <div class="card border-0 shadow-sm p-3 mb-4 bg-white">
+        <form method="GET" action="{{ url_for('db_management.table_records', table_name=table_name) }}" class="row g-2 align-items-center">
+            <!-- Keep sorting context -->
+            <input type="hidden" name="sort_col" value="{{ sort_col }}">
+            <input type="hidden" name="sort_dir" value="{{ sort_dir }}">
+            
+            <div class="col-md-3 col-sm-4">
+                <select name="search_col" class="form-select">
+                    <option value="">-- Select Column to Search --</option>
+                    {% for col in columns %}
+                    <option value="{{ col }}" {% if search_col == col %}selected{% endif %}>{{ col }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-5 col-sm-6">
+                <div class="input-group">
+                    <input type="text" name="search_val" class="form-control" placeholder="Search criteria..." value="{{ search_val }}">
+                    <button type="submit" class="btn btn-dark"><i class="bi bi-search"></i> Search</button>
+                </div>
+            </div>
+            
+            {% if search_col or search_val %}
+            <div class="col-md-2 col-sm-2">
+                <a href="{{ url_for('db_management.table_records', table_name=table_name) }}" class="btn btn-outline-secondary w-100">Clear</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Data Grid Table Card -->
+    <div class="card border-0 shadow-sm mb-4 bg-white">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-nowrap">
+                    <thead class="table-light">
+                        <tr>
+                            {% for col in columns %}
+                            <th>
+                                {% set dir = 'desc' if sort_col == col and sort_dir == 'asc' else 'asc' %}
+                                <a class="text-dark text-decoration-none d-flex align-items-center" href="{{ url_for('db_management.table_records', table_name=table_name, search_col=search_col, search_val=search_val, sort_col=col, sort_dir=dir) }}">
+                                    {{ col }}
+                                    {% if sort_col == col %}
+                                        {% if sort_dir == 'asc' %}
+                                            <i class="bi bi-arrow-up-short ms-1 text-primary"></i>
+                                        {% else %}
+                                            <i class="bi bi-arrow-down-short ms-1 text-primary"></i>
+                                        {% endif %}
+                                    {% else %}
+                                        <i class="bi bi-arrow-down-up ms-1 text-muted opacity-50 small"></i>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            {% endfor %}
+                            <th class="text-end px-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if rows %}
+                            {% for row in rows %}
+                            <tr>
+                                {% for col in columns %}
+                                <td>
+                                    {% if row[col] is none %}
+                                        <span class="text-muted small">NULL</span>
+                                    {% elif row[col] is sameas true %}
+                                        <span class="badge bg-success-subtle text-success">True</span>
+                                    {% elif row[col] is sameas false %}
+                                        <span class="badge bg-danger-subtle text-danger">False</span>
+                                    {% else %}
+                                        <span>{{ row[col] }}</span>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                                <td class="text-end px-4">
+                                    <div class="d-inline-flex gap-2">
+                                        <!-- Edit Button -->
+                                        <button class="btn btn-sm btn-outline-warning" 
+                                                onclick="openEditModal({{ row | tojson | forceescape }}, '{{ pk_name }}')"
+                                                title="Edit Record">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <!-- Delete Form -->
+                                        <form action="{{ url_for('db_management.delete_record', table_name=table_name) }}" 
+                                              method="POST" 
+                                              onsubmit="return confirm('Delete this record permanently? This cannot be undone.');"
+                                              class="delete-form">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="{{ pk_name }}" value="{{ row[pk_name] }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="{{ columns | length + 1 }}" class="text-center py-5 text-muted">
+                                    <i class="bi bi-table fs-1 mb-2 d-block text-secondary"></i>
+                                    {% if search_val %}
+                                        No records found matching search filters.
+                                    {% else %}
+                                        This table is currently empty.
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination Footer -->
+        {% if total_pages > 1 %}
+        <div class="card-footer bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+            <span class="small text-muted">
+                Showing Page <strong>{{ page }}</strong> of <strong>{{ total_pages }}</strong>
+            </span>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('db_management.table_records', table_name=table_name, page=page-1, search_col=search_col, search_val=search_val, sort_col=sort_col, sort_dir=sort_dir) }}">Previous</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                        {% if p == page or (p >= page - 2 and p <= page + 2) %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('db_management.table_records', table_name=table_name, page=p, search_col=search_col, search_val=search_val, sort_col=sort_col, sort_dir=sort_dir) }}">{{ p }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('db_management.table_records', table_name=table_name, page=page+1, search_col=search_col, search_val=search_val, sort_col=sort_col, sort_dir=sort_dir) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: ADD RECORD                          -->
+<!-- ========================================== -->
+<div class="modal fade" id="addRecordModal" tabindex="-1" aria-labelledby="addRecordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="addRecordForm" action="{{ url_for('db_management.add_record', table_name=table_name) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="addRecordModalLabel">Add New Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    {% for col in column_schemas %}
+                        {% if not col.primary_key %}
+                        <div class="mb-3">
+                            <label class="form-label text-capitalize small fw-bold">{{ col.name }}</label>
+                            
+                            {% if col.type == 'number' %}
+                                <input type="number" step="1" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% elif col.type == 'float' %}
+                                <input type="number" step="any" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% elif col.type == 'boolean' %}
+                                <div class="form-check form-switch mt-1">
+                                    <input type="checkbox" name="{{ col.name }}" class="form-check-input" value="true">
+                                    <span class="small text-muted">Toggle Active / True</span>
+                                </div>
+                            {% elif col.type == 'date' %}
+                                <input type="date" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% elif col.type == 'datetime' %}
+                                <input type="datetime-local" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% else %}
+                                <input type="text" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: EDIT RECORD                         -->
+<!-- ========================================== -->
+<div class="modal fade" id="editRecordModal" tabindex="-1" aria-labelledby="editRecordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="editRecordForm" action="{{ url_for('db_management.edit_record', table_name=table_name) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="editRecordModalLabel">Modify Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <!-- Target Primary Key Identifier -->
+                    <input type="hidden" id="edit_pk_val" name="{{ pk_name }}">
+                    
+                    {% for col in column_schemas %}
+                        {% if not col.primary_key %}
+                        <div class="mb-3">
+                            <label class="form-label text-capitalize small fw-bold">{{ col.name }}</label>
+                            
+                            {% if col.type == 'number' %}
+                                <input type="number" step="1" id="edit_{{ col.name }}" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% elif col.type == 'float' %}
+                                <input type="number" step="any" id="edit_{{ col.name }}" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% elif col.type == 'boolean' %}
+                                <div class="form-check form-switch mt-1">
+                                    <input type="checkbox" id="edit_{{ col.name }}" name="{{ col.name }}" class="form-check-input" value="true">
+                                    <span class="small text-muted">Toggle Active / True</span>
+                                </div>
+                            {% elif col.type == 'date' %}
+                                <input type="date" id="edit_{{ col.name }}" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% elif col.type == 'datetime' %}
+                                <input type="datetime-local" id="edit_{{ col.name }}" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% else %}
+                                <input type="text" id="edit_{{ col.name }}" name="{{ col.name }}" class="form-control" {% if not col.nullable %}required{% endif %}>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// AJAX form submit for Add Record
+document.getElementById('addRecordForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = this;
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(err => alert('Network error: ' + err.message));
+});
+
+// Setup Edit Form Values
+function openEditModal(record, pkName) {
+    document.getElementById('edit_pk_val').value = record[pkName];
+    
+    // Dynamically set form input values matching record keys
+    for (const key in record) {
+        if (key === pkName) continue;
+        
+        const el = document.getElementById('edit_' + key);
+        if (el) {
+            if (el.type === 'checkbox') {
+                el.checked = !!record[key];
+            } else if (el.type === 'date' && record[key]) {
+                // Slice timestamp if returned as full isoformat
+                el.value = record[key].substring(0, 10);
+            } else if (el.type === 'datetime-local' && record[key]) {
+                el.value = record[key].substring(0, 16);
+            } else {
+                el.value = record[key] !== null ? record[key] : '';
+            }
+        }
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('editRecordModal'));
+    modal.show();
+}
+
+// AJAX form submit for Edit Record
+document.getElementById('editRecordForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = this;
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(err => alert('Network error: ' + err.message));
+});
+</script>
+{% endblock %}

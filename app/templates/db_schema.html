@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Schema Explorer - DemandAI{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Database Schema Explorer</h1>
+        <p class="text-muted mb-0">Inspect database tables, column types, primary keys, foreign keys, and indexes.</p>
+    </div>
+
+    <!-- Tables Accoridion -->
+    <div class="accordion shadow-sm" id="schemaAccordion">
+        {% for t_name, schema in tables.items() %}
+        <div class="accordion-item border-0 mb-3 rounded shadow-sm bg-white">
+            <h2 class="accordion-header" id="heading_{{ t_name }}">
+                <button class="accordion-button collapsed fw-bold py-3 text-dark bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{ t_name }}" aria-expanded="false" aria-controls="collapse_{{ t_name }}">
+                    <div class="d-flex justify-content-between align-items-center w-100 pe-3">
+                        <div>
+                            <i class="bi bi-table text-primary me-2"></i>
+                            <span class="font-monospace">{{ t_name }}</span>
+                        </div>
+                        <span class="badge bg-secondary-subtle text-secondary fw-normal px-2 py-1 small">
+                            {{ schema.rows_count }} records
+                        </span>
+                    </div>
+                </button>
+            </h2>
+            <div id="collapse_{{ t_name }}" class="accordion-collapse collapse" aria-labelledby="heading_{{ t_name }}" data-bs-parent="#schemaAccordion">
+                <div class="accordion-body border-top p-4">
+                    <!-- Actions -->
+                    <div class="mb-3 text-end">
+                        <a href="{{ url_for('db_management.table_records', table_name=t_name) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Browse Records
+                        </a>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- Columns Grid -->
+                        <div class="col-lg-8">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-columns-gap text-muted me-1"></i> Columns & Datatypes</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered table-hover font-monospace small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Column</th>
+                                            <th>Type</th>
+                                            <th class="text-center">Nullable</th>
+                                            <th class="text-center">Key</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for col in schema.columns %}
+                                        <tr>
+                                            <td class="fw-bold text-dark">{{ col.name }}</td>
+                                            <td>{{ col.type }}</td>
+                                            <td class="text-center">
+                                                {% if col.nullable %}
+                                                    <span class="text-success"><i class="bi bi-check-lg"></i></span>
+                                                {% else %}
+                                                    <span class="text-danger"><i class="bi bi-x-lg"></i></span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                {% if col.name in schema.primary_keys %}
+                                                    <span class="badge bg-primary text-uppercase" style="font-size: 8px;">PK</span>
+                                                {% endif %}
+                                                {% for fk in schema.foreign_keys %}
+                                                    {% if col.name in fk.constrained_columns %}
+                                                        <span class="badge bg-warning text-dark text-uppercase" style="font-size: 8px;" title="FK to {{ fk.referred_table }}.{{ fk.referred_columns[0] }}">FK</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Indexes & FK details -->
+                        <div class="col-lg-4">
+                            <!-- FKs -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-2"><i class="bi bi-link-45deg text-muted me-1"></i> Foreign Key Relations</h6>
+                                {% if schema.foreign_keys %}
+                                    <ul class="list-group list-group-flush font-monospace small">
+                                        {% for fk in schema.foreign_keys %}
+                                        <li class="list-group-item px-0 py-2 border-bottom">
+                                            <span class="text-danger">{{ fk.constrained_columns[0] }}</span> &rarr; 
+                                            <span class="text-success">{{ fk.referred_table }}({{ fk.referred_columns[0] }})</span>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="small text-muted mb-0">No foreign key relations defined.</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Indexes -->
+                            <div>
+                                <h6 class="fw-bold mb-2"><i class="bi bi-bookmark-fill text-muted me-1"></i> Table Indexes</h6>
+                                {% if schema.indexes %}
+                                    <ul class="list-group list-group-flush font-monospace small">
+                                        {% for idx in schema.indexes %}
+                                        <li class="list-group-item px-0 py-2 border-bottom">
+                                            <span class="text-dark">{{ idx.name }}</span> 
+                                            <span class="text-muted">({{ idx.column_names | join(', ') }})</span>
+                                            {% if idx.unique %}
+                                                <span class="badge bg-info-subtle text-info text-uppercase" style="font-size: 8px;">Unique</span>
+                                            {% endif %}
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="small text-muted mb-0">No custom indexes defined.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

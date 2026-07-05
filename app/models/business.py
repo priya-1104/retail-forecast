@@ -121,6 +121,9 @@ class Product(db.Model):
     alerts = db.relationship('Alert', backref='product', lazy='dynamic', cascade='all, delete-orphan')
     stock_transfers = db.relationship('StockTransfer', backref='product', lazy='dynamic', cascade='all, delete-orphan')
     purchase_orders = db.relationship('PurchaseOrder', backref='product', lazy='dynamic', cascade='all, delete-orphan')
+    sales_items = db.relationship('SalesItem', backref='product', lazy='dynamic', cascade='all, delete-orphan')
+    purchase_items = db.relationship('PurchaseItem', backref='product', lazy='dynamic', cascade='all, delete-orphan')
+    returns = db.relationship('ProductReturn', backref='product', lazy='dynamic', cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -157,6 +160,12 @@ class Sale(db.Model):
     
     # Customer Relationship
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id', ondelete='SET NULL'), nullable=True)
+
+    # Extended Relationships
+    items = db.relationship('SalesItem', backref='sale', lazy='dynamic', cascade='all, delete-orphan')
+    payments = db.relationship('Payment', backref='sale', lazy='dynamic', cascade='all, delete-orphan')
+    invoices = db.relationship('Invoice', backref='sale', lazy='dynamic', cascade='all, delete-orphan')
+    returns = db.relationship('ProductReturn', backref='sale', lazy='dynamic', cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -210,6 +219,9 @@ class PurchaseOrder(db.Model):
     total_amount = db.Column(db.Float, default=0.0)
     payment_status = db.Column(db.String(32), default='Unpaid')  # Paid, Unpaid, Partial
 
+    # Extended Relationships
+    items = db.relationship('PurchaseItem', backref='purchase_order', lazy='dynamic', cascade='all, delete-orphan')
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -244,4 +256,130 @@ class StockTransfer(db.Model):
             'quantity': self.quantity,
             'transfer_date': self.transfer_date.isoformat(),
             'status': self.status
+        }
+
+# Phase 2 Database Management Tables
+
+class SalesItem(db.Model):
+    __tablename__ = 'sales_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id', ondelete='CASCADE'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+    price = db.Column(db.Float, nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sale_id': self.sale_id,
+            'product_id': self.product_id,
+            'quantity': self.quantity,
+            'price': self.price
+        }
+
+class PurchaseItem(db.Model):
+    __tablename__ = 'purchase_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id', ondelete='CASCADE'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+    price = db.Column(db.Float, nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'purchase_order_id': self.purchase_order_id,
+            'product_id': self.product_id,
+            'quantity': self.quantity,
+            'price': self.price
+        }
+
+class ProductReturn(db.Model):
+    __tablename__ = 'returns'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id', ondelete='CASCADE'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id', ondelete='CASCADE'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+    reason = db.Column(db.Text, nullable=True)
+    return_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sale_id': self.sale_id,
+            'product_id': self.product_id,
+            'quantity': self.quantity,
+            'reason': self.reason,
+            'return_date': self.return_date.isoformat()
+        }
+
+class Discount(db.Model):
+    __tablename__ = 'discounts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)
+    discount_percent = db.Column(db.Float, nullable=False, default=0.0)
+    active = db.Column(db.Boolean, default=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'discount_percent': self.discount_percent,
+            'active': self.active
+        }
+
+class Coupon(db.Model):
+    __tablename__ = 'coupons'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    discount_amount = db.Column(db.Float, nullable=False, default=0.0)
+    expiry_date = db.Column(db.Date, nullable=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'code': self.code,
+            'discount_amount': self.discount_amount,
+            'expiry_date': self.expiry_date.isoformat() if self.expiry_date else None
+        }
+
+class Payment(db.Model):
+    __tablename__ = 'payments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id', ondelete='CASCADE'), nullable=False)
+    payment_method = db.Column(db.String(64), nullable=False, default='Cash')  # Cash, Card, UPI, Mobile Wallet
+    amount = db.Column(db.Float, nullable=False)
+    payment_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sale_id': self.sale_id,
+            'payment_method': self.payment_method,
+            'amount': self.amount,
+            'payment_date': self.payment_date.isoformat()
+        }
+
+class Invoice(db.Model):
+    __tablename__ = 'invoices'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id', ondelete='CASCADE'), nullable=False)
+    invoice_number = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    issue_date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
+    total_amount = db.Column(db.Float, nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sale_id': self.sale_id,
+            'invoice_number': self.invoice_number,
+            'issue_date': self.issue_date.isoformat(),
+            'total_amount': self.total_amount
         }

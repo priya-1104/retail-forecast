@@ -18,6 +18,12 @@
         <form action="{{ url_for('auth.verify_otp') }}" method="POST" id="otp-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
+            {% if otp_code %}
+            <div class="alert alert-warning border-0 bg-warning-subtle text-dark p-2 rounded mb-3 text-center small">
+                <i class="bi bi-info-circle-fill me-1"></i> [Mock Mode] Verification Code: <strong class="fs-6 font-monospace">{{ otp_code }}</strong>
+            </div>
+            {% endif %}
+            
             <div class="mb-4">
                 <label for="code" class="form-label-custom">One-Time Password Code</label>
                 <div class="input-group">
