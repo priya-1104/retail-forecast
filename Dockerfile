@@ -30,4 +30,4 @@ RUN mkdir -p /app/instance /app/app/static/uploads /app/instance/models
 EXPOSE 5000
 
 # Run Gunicorn WSGI server to host the app
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "run:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "run:app"]
