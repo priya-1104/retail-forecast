@@ -1,0 +1,26 @@
+# Task Checklist: Native Android Application (Phase 3)
+
+- `[x]` **Step 1: Set up Project Configuration**
+  - `[x]` Create `android-native/settings.gradle`
+  - `[x]` Create `android-native/build.gradle` (Project)
+  - `[x]` Create `android-native/app/build.gradle` (Module)
+  - `[x]` Create `android-native/app/src/main/AndroidManifest.xml`
+- `[x]` **Step 2: Resource and Theme Files**
+  - `[x]` Create `android-native/app/src/main/res/values/colors.xml`
+  - `[x]` Create `android-native/app/src/main/res/values/strings.xml`
+  - `[x]` Create `android-native/app/src/main/res/values/themes.xml`
+  - `[x]` Create `android-native/app/src/main/res/navigation/nav_graph.xml`
+- `[x]` **Step 3: Network API & Models**
+  - `[x]` Create `ApiService.java` & `ApiClient.java`
+  - `[x]` Create model classes (LoginRequest, LoginResponse, DashboardModel, ForecastModel, ProductModel, SalesModel, UserModel, ReportModel, InventoryModel)
+- `[x]` **Step 4: Utility Classes**
+  - `[x]` Create `SessionManager.java`
+  - `[x]` Create `Constants.java`
+  - `[x]` Create `PDFExporter.java`
+- `[x]` **Step 5: XML Layout Screens**
+  - `[x]` Create layouts (activity_login.xml, activity_main.xml, fragment_dashboard.xml, fragment_forecast.xml, fragment_inventory.xml, fragment_sales.xml, fragment_reports.xml, fragment_profile.xml, list item layouts)
+- `[x]` **Step 6: UI Adapters & Fragments**
+  - `[x]` Create adapters (ForecastAdapter, InventoryAdapter, SalesAdapter, ProductAdapter)
+  - `[x]` Create fragments (DashboardFragment, ForecastFragment, InventoryFragment, SalesFragment, ReportsFragment, ProfileFragment)
+- `[x]` **Step 7: Main Activities**
+  - `[x]` Create `LoginActivity.java` & `MainActivity.java`

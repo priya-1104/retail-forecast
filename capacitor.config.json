@@ -1,7 +1,7 @@
 
 {
   "appId": "com.demandai.app",
-  "appName": "DemandAI",
+  "appName": "Demand Forecasting",
   "webDir": "app/static",
   "server": {
     "url": "http://10.0.2.2:5000",

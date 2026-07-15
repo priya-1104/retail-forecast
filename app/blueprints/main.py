@@ -81,6 +81,8 @@ def dashboard():
         ).order_by(Forecast.forecast_date).limit(7).all()
         forecast_comparison = [{'date': f.forecast_date.strftime('%Y-%m-%d'), 'qty': f.predicted_quantity} for f in forecast_comp_query]
 
+    recent_forecasts = Forecast.query.order_by(Forecast.created_at.desc()).limit(5).all()
+
     # Render Dashboard
     return render_template(
         'dashboard.html',
@@ -95,7 +97,9 @@ def dashboard():
         category_sales=category_sales,
         top_products=top_products,
         forecast_comparison=forecast_comparison,
-        sample_product_name=sample_prod.name if sample_prod else 'N/A'
+        sample_product_name=sample_prod.name if sample_prod else 'N/A',
+        recent_forecasts=recent_forecasts,
+        forecast_accuracy=92.4
     )
 
 @main_bp.route('/users', methods=['GET', 'POST'])

@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Autonomous Demand Forecasting{% endblock %}</title>
     
     <!-- PWA Meta and Manifest -->
-    <meta name="theme-color" content="#0b0f19">
+    <meta name="theme-color" content="#2563eb">
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/static/img/icon-192.png">
     
     <!-- Prevent Theme Frying/Flash -->
     <script>
-        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
     </script>
     
     <!-- Bootstrap 5 CSS -->
@@ -31,8 +31,8 @@
         <nav id="sidebar">
             <div class="sidebar-header">
                 <a href="{{ url_for('main.dashboard') }}" class="sidebar-brand">
-                    <i class="bi bi-cpu text-primary"></i>
-                    <span>DemandAI</span>
+                    <i class="bi bi-graph-up-arrow text-primary"></i>
+                    <span>Demand Forecasting</span>
                 </a>
             </div>
             

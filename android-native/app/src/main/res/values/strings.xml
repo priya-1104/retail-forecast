@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Demand Forecasting</string>
+    
+    <!-- Navigation Labels -->
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_forecast">Forecast</string>
+    <string name="title_inventory">Inventory</string>
+    <string name="title_sales">Sales</string>
+    <string name="title_reports">Reports</string>
+    <string name="title_profile">Profile</string>
+    
+    <!-- Login Screen Strings -->
+    <string name="login_title">Welcome Back</string>
+    <string name="login_subtitle">Sign in to access Demand Forecasting</string>
+    <string name="hint_email">Email Address</string>
+    <string name="hint_password">Password</string>
+    <string name="btn_login">Login</string>
+    <string name="error_invalid_credentials">Invalid email or password.</string>
+    <string name="error_network_failed">Network request failed. Check server status.</string>
+</resources>

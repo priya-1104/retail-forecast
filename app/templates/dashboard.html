@@ -1,70 +1,113 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - DemandAI{% endblock %}
+{% block title %}Dashboard - Demand Forecasting{% endblock %}
 
 {% block header_title %}Analytics Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid py-2">
     <!-- Top KPI Analytics Cards -->
     <div class="row g-3 mb-4">
+        <!-- Total Products Card -->
+        <div class="col-xl-3 col-md-6 col-sm-6">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white rounded-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-uppercase text-muted small fw-bold" style="font-size: 11px;">Total Products</span>
+                        <h3 class="mb-0 mt-1 fw-bold text-dark">{{ total_products }}</h3>
+                    </div>
+                    <div class="bg-primary-subtle text-primary p-3 rounded-3">
+                        <i class="bi bi-box-seam-fill fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3 small text-muted">
+                    <span>Active items in catalog</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Sales Card -->
+        <div class="col-xl-3 col-md-6 col-sm-6">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white rounded-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-uppercase text-muted small fw-bold" style="font-size: 11px;">Total Sales (Txns)</span>
+                        <h3 class="mb-0 mt-1 fw-bold text-dark">{{ total_sales_records }}</h3>
+                    </div>
+                    <div class="bg-success-subtle text-success p-3 rounded-3">
+                        <i class="bi bi-cart-check-fill fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3 small text-muted">
+                    <span>Successful transactions</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forecast Accuracy Card -->
+        <div class="col-xl-3 col-md-6 col-sm-6">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white rounded-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-uppercase text-muted small fw-bold" style="font-size: 11px;">Forecast Accuracy</span>
+                        <h3 class="mb-0 mt-1 fw-bold text-primary">{{ forecast_accuracy }}%</h3>
+                    </div>
+                    <div class="bg-info-subtle text-info p-3 rounded-3">
+                        <i class="bi bi-shield-fill-check fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3 small text-muted">
+                    <span>Deep learning model average</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Monthly Revenue Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card-custom card-analytics p-3" style="--accent-color: var(--primary);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted fw-semibold">Monthly Sales Revenue</span>
-                    <i class="bi bi-currency-dollar text-primary fs-4"></i>
+        <div class="col-xl-3 col-md-6 col-sm-6">
+            <div class="card border-0 shadow-sm p-3 h-100 bg-white rounded-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-uppercase text-muted small fw-bold" style="font-size: 11px;">Monthly Revenue</span>
+                        <h3 class="mb-0 mt-1 fw-bold text-dark">${{ "%.2f"|format(monthly_revenue) }}</h3>
+                    </div>
+                    <div class="bg-warning-subtle text-warning p-3 rounded-3">
+                        <i class="bi bi-currency-dollar fs-4"></i>
+                    </div>
                 </div>
-                <h3 class="text-value text-white mb-1">${{ "%.2f"|format(monthly_revenue) }}</h3>
-                <div class="fs-7 text-secondary-custom">
-                    <span class="text-success"><i class="bi bi-graph-up"></i> Last 30 Days</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Predicted Demand Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card-custom card-analytics p-3" style="--accent-color: var(--info);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted fw-semibold">Predicted Demand (30d)</span>
-                    <i class="bi bi-graph-up-arrow text-info fs-4"></i>
-                </div>
-                <h3 class="text-value text-white mb-1">{{ "%.0f"|format(predicted_demand_qty) }} units</h3>
-                <div class="fs-7 text-secondary-custom">
-                    <span class="text-info"><i class="bi bi-cpu"></i> AI Mode Predictions</span>
+                <div class="mt-3 small text-muted">
+                    <span>Revenue last 30 days</span>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Low Stock Items Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card-custom card-analytics p-3" style="--accent-color: var(--warning);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted fw-semibold">Shortage Risk Items</span>
-                    <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
-                </div>
-                <h3 class="text-value mb-1 {% if low_stock_count > 0 %}text-warning{% else %}text-white{% endif %}">
-                    {{ low_stock_count }} items
-                </h3>
-                <div class="fs-7 text-secondary-custom">
-                    <span>Below Safety Stock / ROP</span>
-                </div>
+    <!-- Quick Action buttons -->
+    <div class="card border-0 shadow-sm p-3 mb-4 bg-white rounded-3">
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-lightning-charge-fill text-warning me-1"></i>Quick Actions</h6>
+        <div class="row g-2">
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('forecasting.forecast_panel') }}" class="btn btn-outline-primary w-100 py-3 d-flex flex-column align-items-center rounded-3">
+                    <i class="bi bi-graph-up-arrow fs-4 mb-1"></i>
+                    <span class="small fw-semibold">AI Forecasting</span>
+                </a>
             </div>
-        </div>
-
-        <!-- Unread Warnings Card -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card-custom card-analytics p-3" style="--accent-color: var(--danger);">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted fw-semibold">Active System Alerts</span>
-                    <i class="bi bi-bell-fill text-danger fs-4"></i>
-                </div>
-                <h3 class="text-value mb-1 {% if unread_alerts_count > 0 %}text-danger{% else %}text-white{% endif %}">
-                    {{ unread_alerts_count }} alerts
-                </h3>
-                <div class="fs-7 text-secondary-custom">
-                    <span>Require operational action</span>
-                </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('inventory.inventory_panel') }}" class="btn btn-outline-success w-100 py-3 d-flex flex-column align-items-center rounded-3">
+                    <i class="bi bi-clipboard-data-fill fs-4 mb-1"></i>
+                    <span class="small fw-semibold">Inventory Ops</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('reports.reports_panel') }}" class="btn btn-outline-info w-100 py-3 d-flex flex-column align-items-center rounded-3">
+                    <i class="bi bi-file-earmark-bar-graph-fill fs-4 mb-1"></i>
+                    <span class="small fw-semibold">Reports</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-3">
+                <a href="{{ url_for('products.list_products') }}" class="btn btn-outline-dark w-100 py-3 d-flex flex-column align-items-center rounded-3">
+                    <i class="bi bi-box-seam-fill fs-4 mb-1"></i>
+                    <span class="small fw-semibold">Manage Products</span>
+                </a>
             </div>
         </div>
     </div>
@@ -72,53 +115,111 @@
     <!-- Charts Grid Row 1 -->
     <div class="row g-4 mb-4">
         <!-- Sales Trend Line Chart -->
-        <div class="col-lg-8">
-            <div class="card-custom p-4">
-                <h5 class="fw-bold text-white mb-3"><i class="bi bi-activity text-primary me-2"></i>Sales Revenue Trend (Daily)</h5>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm p-4 bg-white h-100 rounded-3">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-activity text-primary me-2"></i>Sales Revenue Trend (Daily)</h5>
                 <div style="position: relative; height: 300px; width: 100%;">
                     <canvas id="salesTrendChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Category breakdown pie/doughnut -->
-        <div class="col-lg-4">
-            <div class="card-custom p-4">
-                <h5 class="fw-bold text-white mb-3"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Sales by Category</h5>
-                <div style="position: relative; height: 300px; width: 100%;">
-                    <canvas id="categorySalesChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts Grid Row 2 -->
-    <div class="row g-4">
-        <!-- Top Products Bar Chart -->
-        <div class="col-md-6">
-            <div class="card-custom p-4">
-                <h5 class="fw-bold text-white mb-3"><i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Top 5 Products (by Revenue)</h5>
-                <div style="position: relative; height: 260px; width: 100%;">
-                    <canvas id="topProductsChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- AI Forecast Schedule Bar Chart -->
-        <div class="col-md-6">
-            <div class="card-custom p-4">
-                <h5 class="fw-bold text-white mb-3">
-                    <i class="bi bi-forecast text-primary me-2"></i>AI 7-Day Forecast: <small class="text-secondary font-monospace">{{ sample_product_name }}</small>
+        <!-- Demand Forecast Chart -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm p-4 bg-white h-100 rounded-3">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="bi bi-cpu text-primary me-2"></i>AI 7-Day Forecast: <small class="text-muted font-monospace">{{ sample_product_name }}</small>
                 </h5>
-                <div style="position: relative; height: 260px; width: 100%;">
+                <div style="position: relative; height: 300px; width: 100%;">
                     {% if forecast_comparison %}
                     <canvas id="forecastComparisonChart"></canvas>
                     {% else %}
                     <div class="text-center text-muted py-5">
                         <i class="bi bi-slash-circle fs-3 mb-2 d-block"></i>
-                        No active predictions. Go to the Forecasting page to train models and generate forecasts.
+                        No active predictions. Go to the Forecasting page to train models.
                     </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Row (Recent Forecasts & Low Stock Alerts) -->
+    <div class="row g-4">
+        <!-- Recent Forecasts Table Card -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100 bg-white rounded-3">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-graph-up text-primary me-2"></i>Recent Predictions</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 text-nowrap">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product ID</th>
+                                    <th>Model</th>
+                                    <th>Horizon</th>
+                                    <th>Predicted Qty</th>
+                                    <th>Forecast Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if recent_forecasts %}
+                                    {% for f in recent_forecasts %}
+                                    <tr>
+                                        <td class="fw-bold font-monospace">#{{ f.product_id }}</td>
+                                        <td><span class="badge bg-primary-subtle text-primary">{{ f.model_used }}</span></td>
+                                        <td>{{ f.horizon_days }} days</td>
+                                        <td class="fw-semibold text-dark">{{ "%.1f"|format(f.predicted_quantity) }}</td>
+                                        <td>{{ f.forecast_date.isoformat() }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted">
+                                            No recent forecasts found.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shortage / Low Stock Alerts Card -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100 bg-white rounded-3">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold text-dark"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Low Stock Warnings</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% if low_stock_count > 0 %}
+                            <li class="list-group-item p-3 border-0 bg-transparent text-muted small">
+                                The following inventory items are running below safety stock levels:
+                            </li>
+                            <!-- We can show low stock alerts dynamically -->
+                            <li class="list-group-item p-3 border-0 bg-transparent">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-warning-subtle text-warning p-2 rounded-circle">
+                                        <i class="bi bi-exclamation-circle-fill"></i>
+                                    </div>
+                                    <div>
+                                        <span class="d-block fw-bold text-dark small">Inventory Shortage Risk</span>
+                                        <span class="small text-muted">{{ low_stock_count }} items require re-ordering.</span>
+                                    </div>
+                                </div>
+                            </li>
+                        {% else %}
+                            <li class="list-group-item py-5 border-0 bg-transparent text-center text-muted">
+                                <i class="bi bi-check-circle-fill text-success fs-1 mb-2 d-block"></i>
+                                All inventory levels are optimal!
+                            </li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
         </div>
@@ -145,9 +246,10 @@
                     label: 'Daily Revenue ($)',
                     data: trendValues,
                     borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    backgroundColor: 'rgba(37, 99, 235, 0.05)',
                     borderWidth: 2,
-                    pointRadius: 3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#2563eb',
                     fill: true,
                     tension: 0.1
                 }]
@@ -156,70 +258,14 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                    x: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { color: '#64748b' } },
+                    y: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { color: '#64748b' } }
                 },
                 plugins: { legend: { display: false } }
             }
         });
 
-        // 2. Chart B: Category Wise Sales (Doughnut)
-        const catData = {{ category_sales|tojson }};
-        const catLabels = catData.map(d => d.category);
-        const catValues = catData.map(d => d.revenue);
-
-        new Chart(document.getElementById('categorySalesChart').getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: catLabels,
-                datasets: [{
-                    data: catValues,
-                    backgroundColor: ['#38bdf8', '#10b981', '#fbbf24', '#f87171', '#a855f7'],
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.08)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#f8fafc', boxWidth: 12 }
-                    }
-                }
-            }
-        });
-
-        // 3. Chart C: Top Products (Horizontal Bar)
-        const topData = {{ top_products|tojson }};
-        const topLabels = topData.map(d => d.name);
-        const topValues = topData.map(d => d.revenue);
-
-        new Chart(document.getElementById('topProductsChart').getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: topLabels,
-                datasets: [{
-                    label: 'Revenue ($)',
-                    data: topValues,
-                    backgroundColor: '#10b981',
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                    y: { grid: { display: false }, ticks: { color: '#f8fafc' } }
-                },
-                plugins: { legend: { display: false } }
-            }
-        });
-
-        // 4. Chart D: AI Forecast Schedule (Bar)
+        // 2. Chart D: AI Forecast (Bar)
         {% if forecast_comparison %}
         const fcData = {{ forecast_comparison|tojson }};
         const fcLabels = fcData.map(d => d.date);
@@ -232,7 +278,7 @@
                 datasets: [{
                     label: 'Predicted Units',
                     data: fcValues,
-                    backgroundColor: '#a855f7',
+                    backgroundColor: '#3b82f6',
                     borderRadius: 4
                 }]
             },
@@ -240,8 +286,8 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                    x: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { color: '#64748b' } },
+                    y: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { color: '#64748b' } }
                 },
                 plugins: { legend: { display: false } }
             }
