@@ -18,14 +18,22 @@ from app.models.system import Alert, SystemLog
 from app.models.forecast import ModelVersion, TrainingHistory
 from app.models.hr import Employee, Attendance
 
-def seed_database():
+def seed_database(drop_tables=True):
     app = create_app()
     with app.app_context():
         print("Initializing database seeding...")
         
-        # 1. Clear database (optional, but good for resetting in dev)
-        db.drop_all()
-        db.create_all()
+        if drop_tables:
+            print("Dropping and recreating database tables...")
+            db.drop_all()
+            db.create_all()
+        else:
+            print("Ensuring database tables exist...")
+            db.create_all()
+            from app.models.auth import User
+            if User.query.first() is not None:
+                print("Database already contains user records. Skipping seed.")
+                return
         
         # 2. Seed Users
         print("Seeding Users...")
